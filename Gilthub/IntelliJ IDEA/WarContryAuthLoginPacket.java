@@ -46,20 +46,31 @@ public class WarContryAuthLoginPacket {
             }
 
             try {
-                if (!packet.challengeId.isBlank()) {
-                    String expectedChallenge = WarContryAuthManager.getPending2FA(player.getUUID());
-                    if (expectedChallenge == null || !expectedChallenge.equals(packet.challengeId)) {
-                        player.sendSystemMessage(Component.literal("§cSession de vérification invalide. Recommence la connexion."));
+                String pendingChallenge = WarContryAuthManager.getPending2FA(player.getUUID());
+
+                // If a 2FA challenge is pending, the code field completes that challenge.
+                if (pendingChallenge != null && !packet.code.isBlank()) {
+                    String challengeToVerify = packet.challengeId.isBlank()
+                            ? pendingChallenge : packet.challengeId;
+
+                    if (!pendingChallenge.equals(challengeToVerify)) {
+                        player.sendSystemMessage(Component.literal("§cSession de vérification invalide."));
                         return;
                     }
 
-                    var result = WarContryAuthAPI.authenticate2FA(packet.challengeId, packet.code);
+                    var result = WarContryAuthAPI.authenticate2FA(challengeToVerify, packet.code);
                     if (result.has("authenticated") && result.get("authenticated").getAsBoolean()) {
                         WarContryAuthManager.authenticate(player.getUUID());
                         player.sendSystemMessage(Component.literal("§aConnexion War Contry réussie !"));
                     } else {
-                        player.sendSystemMessage(Component.literal("§c" + result.get("error").getAsString()));
+                        String error = result.has("error") ? result.get("error").getAsString() : "Code invalide.";
+                        player.sendSystemMessage(Component.literal("§c" + error));
                     }
+                    return;
+                }
+
+                if (!packet.challengeId.isBlank()) {
+                    player.sendSystemMessage(Component.literal("§cAucune vérification en attente."));
                     return;
                 }
 
