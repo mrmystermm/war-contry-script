@@ -1,10 +1,10 @@
-
 package com.warcontry.auth;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.network.PacketDistributor;
 
 @Mod.EventBusSubscriber(modid = WarContryAuth.MOD_ID)
 public class WarContryAuthEvents {
@@ -17,6 +17,11 @@ public class WarContryAuthEvents {
         }
 
         WarContryAuthManager.unauthenticate(player.getUUID());
+
+        WarContryAuthNetwork.CHANNEL.send(
+                PacketDistributor.PLAYER.with(() -> player),
+                new WarContryAuthOpenScreenPacket()
+        );
 
         System.out.println(
                 "[War Contry Auth] Connexion détectée : "
