@@ -1,9 +1,9 @@
 package com.warcontry.auth;
 
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.network.PacketDistributor;
 
 import java.util.function.Supplier;
 
@@ -48,34 +48,33 @@ public class WarContryAuthLoginPacket {
             try {
                 String pendingChallenge = WarContryAuthManager.getPending2FA(player.getUUID());
 
-                // If a 2FA challenge is pending, the code field completes that challenge.
                 if (pendingChallenge != null && !packet.code.isBlank()) {
                     String challengeToVerify = packet.challengeId.isBlank()
                             ? pendingChallenge : packet.challengeId;
 
                     if (!pendingChallenge.equals(challengeToVerify)) {
-                        player.sendSystemMessage(Component.literal("§cSession de vérification invalide."));
+                        sendStatus(player, "Session de vérification invalide.", 0xFF5555);
                         return;
                     }
 
                     var result = WarContryAuthAPI.authenticate2FA(challengeToVerify, packet.code);
                     if (result.has("authenticated") && result.get("authenticated").getAsBoolean()) {
                         WarContryAuthManager.authenticate(player.getUUID());
-                        player.sendSystemMessage(Component.literal("§aConnexion War Contry réussie !"));
+                        sendStatus(player, "Connexion War Contry réussie !", 0x55FF55);
                     } else {
                         String error = result.has("error") ? result.get("error").getAsString() : "Code invalide.";
-                        player.sendSystemMessage(Component.literal("§c" + error));
+                        sendStatus(player, error, 0xFF5555);
                     }
                     return;
                 }
 
                 if (!packet.challengeId.isBlank()) {
-                    player.sendSystemMessage(Component.literal("§cAucune vérification en attente."));
+                    sendStatus(player, "Aucune vérification en attente.", 0xFF5555);
                     return;
                 }
 
                 if (packet.username.isBlank() || packet.password.isBlank()) {
-                    player.sendSystemMessage(Component.literal("§cRemplis ton pseudo et ton mot de passe."));
+                    sendStatus(player, "Remplis ton pseudo et ton mot de passe.", 0xFF5555);
                     return;
                 }
 
@@ -83,19 +82,26 @@ public class WarContryAuthLoginPacket {
                 if (result.has("requires2FA") && result.get("requires2FA").getAsBoolean()) {
                     String id = result.get("challengeId").getAsString();
                     WarContryAuthManager.setPending2FA(player.getUUID(), id);
-                    player.sendSystemMessage(Component.literal("§eUn code de vérification a été envoyé par e-mail. Saisis-le dans l'écran de connexion."));
+                    sendStatus(player, "Code de vérification envoyé par e-mail. Saisis-le ici.", 0xFFFF55);
                 } else if (result.has("authenticated") && result.get("authenticated").getAsBoolean()) {
                     WarContryAuthManager.authenticate(player.getUUID());
-                    player.sendSystemMessage(Component.literal("§aConnexion War Contry réussie !"));
+                    sendStatus(player, "Connexion War Contry réussie !", 0x55FF55);
                 } else {
                     String error = result.has("error") ? result.get("error").getAsString() : "Connexion refusée.";
-                    player.sendSystemMessage(Component.literal("§c" + error));
+                    sendStatus(player, error, 0xFF5555);
                 }
             } catch (Exception exception) {
-                player.sendSystemMessage(Component.literal("§cImpossible de contacter le service d'authentification."));
+                sendStatus(player, "Impossible de contacter le service d'authentification.", 0xFF5555);
                 System.err.println("[War Contry Auth] Échec authentification: " + exception.getMessage());
             }
         });
         context.setPacketHandled(true);
+    }
+
+    private static void sendStatus(ServerPlayer player, String message, int color) {
+        WarContryAuthNetwork.CHANNEL.send(
+                PacketDistributor.PLAYER.with(() -> player),
+                new WarContryAuthStatusPacket(message, color)
+        );
     }
 }
