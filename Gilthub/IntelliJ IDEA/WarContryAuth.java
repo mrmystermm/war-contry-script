@@ -1,4 +1,3 @@
-
 package com.warcontry.auth;
 
 import net.minecraftforge.fml.ModLoadingContext;
@@ -15,6 +14,8 @@ public class WarContryAuth {
                 ModConfig.Type.COMMON,
                 WarContryAuthConfig.SPEC
         );
+
+        WarContryAuthNetwork.register();
 
         System.out.println("[War Contry Auth] Le mod est chargé !");
     }
