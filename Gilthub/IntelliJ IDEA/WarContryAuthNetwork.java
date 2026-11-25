@@ -41,5 +41,14 @@ public class WarContryAuthNetwork {
                 WarContryAuthOpenScreenPacket::handle,
                 Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT)
         );
+
+        CHANNEL.registerMessage(
+                2,
+                WarContryAuthStatusPacket.class,
+                WarContryAuthStatusPacket::encode,
+                WarContryAuthStatusPacket::decode,
+                WarContryAuthStatusPacket::handle,
+                Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT)
+        );
     }
 }
