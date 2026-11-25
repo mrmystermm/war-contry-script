@@ -14,6 +14,13 @@ public class WarContryAuthScreen extends Screen {
     private EditBox usernameField;
     private EditBox passwordField;
     private EditBox codeField;
+    private String statusMessage = "";
+    private int statusColor = 0xFFFFFF;
+
+    public void setStatus(String message, int color) {
+        this.statusMessage = message == null ? "" : message;
+        this.statusColor = color;
+    }
 
     public WarContryAuthScreen() {
         super(Component.literal("Connexion War Contry"));
@@ -114,6 +121,10 @@ public class WarContryAuthScreen extends Screen {
                 this.height / 2 - 24,
                 0xFFFFFF
         );
+
+        if (!statusMessage.isEmpty()) {
+            graphics.drawCenteredString(this.font, statusMessage, this.width / 2, this.height / 2 + 67, statusColor);
+        }
 
         super.render(graphics, mouseX, mouseY, partialTick);
     }
